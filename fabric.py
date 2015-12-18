@@ -32,7 +32,7 @@ def get_info():
 		numNodes = int(json_obj['totalCount'])
 		print "<table width='100%%' id='healthtable'>"
 		print "<thead><tr><th>Switch name</th><th>Health</th></tr></thead>"
-		for i in range (0, numNodes-1):
+		for i in range (0, numNodes):
 			name   = json_obj['imdata'][i]['topSystem']['attributes']['name']
 			role   = json_obj['imdata'][i]['topSystem']['attributes']['role']
 			if role != "controller":

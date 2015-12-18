@@ -29,7 +29,7 @@ def get_tenant():
 		numTenants = int(json_obj['totalCount'])
 		print "<table width='100%%' id='healthtable'>"
 		print "<thead><tr><th>Tenant name</th><th>Health</th></tr></thead>"
-		for i in range (0, numTenants-1):
+		for i in range (0, numTenants):
 			name   = json_obj['imdata'][i]['fvTenant']['attributes']['name']
 			health =  json_obj['imdata'][i]['fvTenant']['children'][0]['healthInst']['attributes']['twScore']
 			healthnum = int (health)

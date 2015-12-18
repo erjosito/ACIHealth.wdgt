@@ -29,7 +29,7 @@ def get_info ():
 		numFaults = int(json_obj['totalCount'])
 		print "<table width='100%%' id='faulttable'>"
 		print "<thead><tr><th>Fault</th><th>Severity</th></tr></thead>"
-		for i in range (0, numFaults-1):
+		for i in range (0, numFaults):
 			try:
 				cause     = json_obj['imdata'][i]['faultSummary']['attributes']['cause']
 				count     = json_obj['imdata'][i]['faultSummary']['attributes']['count']
