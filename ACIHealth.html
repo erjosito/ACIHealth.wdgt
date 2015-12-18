@@ -193,7 +193,7 @@ function displayTitle () {
 			if ((!(apicusr.length > 0)) || (!(apicpwd.length > 0))) {
 				document.getElementById('title').innerHTML = "Please define the APIC credentials in the Preferences";
 			} else {
-			    switch (showingNow):
+			    switch (showingNow) {
 			    	case "tenants":
 						document.getElementById('title').innerHTML = "Tenant health";
 						document.getElementById('subtitle').innerHTML = "";
@@ -208,6 +208,7 @@ function displayTitle () {
 						break;
 					default:
 						document.getElementById('title').innerHTML = "Please choose an option below";
+				}
 			}
 		}
 	}
