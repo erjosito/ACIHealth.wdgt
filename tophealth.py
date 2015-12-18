@@ -11,7 +11,8 @@ def login():
     try:
         r = requests.post(
             url = apic_url + "api/aaaLogin.xml",
-            data = "<aaaUser name=\"" + apic_usr + "\" pwd=\"" + apic_pwd + "\" />"
+            data = "<aaaUser name=\"" + apic_usr + "\" pwd=\"" + apic_pwd + "\" />",
+            verify = False
         )
         login_cookies = r.cookies
     except requests.exceptions.RequestException as e:
@@ -24,7 +25,9 @@ def get_info ():
     try:
 		r = requests.get(
 			url = apic_url + "api/node/mo/topology/health.json",
-			cookies = login_cookies)
+			cookies = login_cookies,
+			verify = False
+		)
 		json_obj = json.loads (r.text)
 		health = json_obj['imdata'][0]['fabricHealthTotal']['attributes']['cur']
 		print health		

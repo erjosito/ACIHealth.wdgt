@@ -5,19 +5,20 @@ import sys
 login_cookies = 0
 
 def login():
-    # Login (POST http://muc-apic.cisco.com/api/aaaLogin.xml)
-    global login_cookies
-    global apic_url
-    global apic_usr
-    global apic_pwd
-    try:
-        r = requests.post(
-            url = apic_url + "api/aaaLogin.xml",
-            data = "<aaaUser name=\"" + apic_usr + "\" pwd=\"" + apic_pwd + "\" />"
-        )
-        login_cookies = r.cookies
-    except requests.exceptions.RequestException as e:
-        print('Login HTTP Request failed')
+	# Login (POST http://muc-apic.cisco.com/api/aaaLogin.xml)
+	global login_cookies
+	global apic_url
+	global apic_usr
+	global apic_pwd
+	try:
+		r = requests.post(
+			url = apic_url + "api/aaaLogin.xml",
+			data = "<aaaUser name=\"" + apic_usr + "\" pwd=\"" + apic_pwd + "\" />",
+			verify = False
+		)
+		login_cookies = r.cookies
+	except requests.exceptions.RequestException as e:
+		print('Login HTTP Request failed')
 
 def get_info():
     # Create tenant (POST http://10.49.238.40/api/node/mo/uni/tn-helloworld_REST.json)
@@ -26,7 +27,8 @@ def get_info():
     try:
 		r = requests.get(
 			url = apic_url + "api/node/class/topSystem.json?rsp-subtree-include=health",
-			cookies = login_cookies
+			cookies = login_cookies,
+			verify = False
 		)
 		json_obj = json.loads (r.text)
 		numNodes = int(json_obj['totalCount'])

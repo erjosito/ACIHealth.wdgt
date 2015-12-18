@@ -11,7 +11,8 @@ def login():
     try:
         r = requests.post(
             url = apic_url + "api/aaaLogin.xml",
-            data = "<aaaUser name=\"" + apic_usr + "\" pwd=\"" + apic_pwd + "\" />"
+            data = "<aaaUser name=\"" + apic_usr + "\" pwd=\"" + apic_pwd + "\" />",
+            verify = False
         )
         login_cookies = r.cookies
     except requests.exceptions.RequestException as e:
@@ -24,7 +25,9 @@ def get_tenant():
 	try:
 		r = requests.get(
 			url = apic_url + "api/node/class/fvTenant.json?rsp-subtree-include=health",
-			cookies = login_cookies)
+			cookies = login_cookies,
+			verify = False
+		)
 		json_obj = json.loads (r.text)
 		numTenants = int(json_obj['totalCount'])
 		print "<table width='100%%' id='healthtable'>"
