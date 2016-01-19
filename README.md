@@ -25,3 +25,8 @@ v0.3
 - Set title after options pop up
 - verify=False in Python requests. SSL still not working for me,
   there seems to be some dependencies with the requests version
+
+v0.4
+- Use the system python (output of a /usr/bin/which python)
+- Detect whether APIC reachable
+- Detect whether Python libraries in the system

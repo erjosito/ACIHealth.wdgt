@@ -152,20 +152,26 @@
 <script type='text/javascript' src='/System/Library/WidgetResources/AppleClasses/AppleButton.js' charset='utf-8'/>
 
 <script type='text/javascript'>
-	var showVariables = false;
-	var showingNow    = "nothing";
-	var mingreen      = 80;
-	var minorange     = 50;
-	
-	var gDoneButton;
-	var gInfoButton;
- 
-	function setup() {
-		gDoneButton = new AppleGlassButton(document.getElementById("doneButton"), "Done", hidePrefs);
-		gInfoButton = new AppleInfoButton(document.getElementById("infoButton"), document.getElementById("front"), "black", "black", showPrefs);
-		if (showVariables) displayOptions ();
-		displayTitle ();
-	}
+
+var showVariables = false;        // Show debug info
+var showingNow    = "nothing";
+var mingreen      = 80;
+var minorange     = 50;
+var pythonPath    = "";
+var errorMsg1     = "";
+var errorMsg2     = "";
+var debugInfo     = "";
+
+var gDoneButton;
+var gInfoButton;
+
+function setup() {
+	gDoneButton = new AppleGlassButton(document.getElementById("doneButton"), "Done", hidePrefs);
+	gInfoButton = new AppleInfoButton(document.getElementById("infoButton"), document.getElementById("front"), "black", "black", showPrefs);
+	if (showVariables) displayOptions ();
+	initialize ();
+	displayTitle ();
+}
 	
 
 function displayOptions () {
@@ -176,39 +182,89 @@ function displayOptions () {
 		var apicpwd = widget.preferenceForKey("apicpwd");
 	}
 	// Write them on the document
-	var text = "Current option value:<br>";
+	var text = "Debug info:<br>";
+	len = pythonPath.length;
+	var text = text + pythonPath + "(" + len.toString() + ")<br>";
 	var text = text + apicurl + "<br>";
 	var text = text + apicusr + "<br>";
+	var text = text + debugInfo + "<br>";
 	document.getElementById('options').innerHTML = text;
 }
+
+// Do some preliminary checks and get the value of some variables
+function initialize () {
+	var cmd = "";
+	var txt = "";
+	errorMsg1 = "";
+	errorMsg2 = "";
+
+	if (window.widget) {
+		pythonPath = widget.system ("/usr/bin/which python", null).outputString;
+		if ((pythonPath != null) && (pythonPath != undefined)) {
+			// Valid python executable found, let us check the libraries
+			// Remove the CR from the end of the string
+			pythonPath = pythonPath.substr (0, (pythonPath.length - 1))
+			cmd = pythonPath + " libcheck.py";
+			txt = widget.system(cmd, null).outputString;
+			if ((txt != null) && (txt != undefined)) {
+				errorMsg1 = "Python libraries missing (maybe requests)?";
+			} else {
+				// All libraries there, lets check that all options are defined
+				var apicurl = widget.preferenceForKey("apicurl");
+				var apicusr = widget.preferenceForKey("apicusr");
+				var apicpwd = widget.preferenceForKey("apicpwd");
+				if ((apicurl.length == 0) || (apicusr.length == 0) || (apicpwd.length == 0)) {
+					errorMsg1 = "Missing option?";
+					if (apicpwd.length == 0) {
+						errorMsg2 = "Check the APIC password";
+					} else if (apicusr.length == 0) {
+						errorMsg2 = "Check the APIC username";
+					} else if (apicurl.length == 0) {
+						errorMsg2 = "Check the APIC URL " + apicurl;
+					}
+				} else {
+					// Check connectivity to APIC
+					cmd = pythonPath + " apiccheck.py " + apicurl + " " + apicusr + " " + apicpwd;
+					txt = widget.system(cmd, null).outputString;
+					if ((txt != null) && (txt != undefined)){
+						errorMsg1 = "No access to APIC with URL and credentials provided";
+					} else {
+					}
+				}
+			}
+		} else {
+			errorMsg1 = "No valid python executable found";
+		}
+	}
+}
+
+
 
 function displayTitle () {
 	if (window.widget) {
 		var apicurl = widget.preferenceForKey("apicurl");
 		var apicusr = widget.preferenceForKey("apicusr");
 		var apicpwd = widget.preferenceForKey("apicpwd");
-		if (!(apicurl.length > 0)) {
-			document.getElementById('title').innerHTML = "Please define the APIC's URL in the Preferences";
+		if (errorMsg1.length > 0) {
+			document.getElementById('title').innerHTML = errorMsg1;
+			document.getElementById('subtitle').innerHTML = errorMsg2;
 		} else {
-			if ((!(apicusr.length > 0)) || (!(apicpwd.length > 0))) {
-				document.getElementById('title').innerHTML = "Please define the APIC credentials in the Preferences";
-			} else {
-			    switch (showingNow) {
-			    	case "tenants":
-						document.getElementById('title').innerHTML = "Tenant health";
-						document.getElementById('subtitle').innerHTML = "";
-						break;
-			    	case "fabric":
-						document.getElementById('title').innerHTML = "Switch health";
-						document.getElementById('subtitle').innerHTML = "";
-						break;
-			    	case "faults":
-						document.getElementById('title').innerHTML = "Fabric faults";
-						document.getElementById('subtitle').innerHTML = "Truncated to 15 faults";
-						break;
-					default:
-						document.getElementById('title').innerHTML = "Please choose an option below";
-				}
+			switch (showingNow) {
+				case "tenants":
+					document.getElementById('title').innerHTML = "Tenant health";
+					document.getElementById('subtitle').innerHTML = "";
+					break;
+				case "fabric":
+					document.getElementById('title').innerHTML = "Switch health";
+					document.getElementById('subtitle').innerHTML = "";
+					break;
+				case "faults":
+					document.getElementById('title').innerHTML = "Fabric faults";
+					document.getElementById('subtitle').innerHTML = "Truncated to 15 faults";
+					break;
+				default:
+					document.getElementById('title').innerHTML = "Please choose an option below";
+					document.getElementById('subtitle').innerHTML = "";
 			}
 		}
 	}
@@ -225,13 +281,10 @@ function setDefaultOptions () {
 function fillOptions () {
 	if(window.widget) {
 		var apicurl = widget.preferenceForKey("apicurl");
-		//credentials_form.apicurl_box.value = apic_url;
 		document.getElementById("apicurl_box").defaultValue = apicurl;
 		var apicusr = widget.preferenceForKey("apicusr");
-		//credentials_form.apicusr_box.value = apic_usr;
 		document.getElementById("apicusr_box").defaultValue = apicusr;
 		var apicpwd = widget.preferenceForKey("apicpwd");
-		//credentials_form.apicpwd_box.value = apic_pwd;
 		document.getElementById("apicpwd_box").defaultValue = apicpwd;
 	}
 }
@@ -264,6 +317,8 @@ function hidePrefs() {
 	var front = document.getElementById("front");
 	var back = document.getElementById("back");
 
+	setOptions ();
+
 	if (window.widget)
 		widget.prepareForTransition("ToFront");
 
@@ -273,8 +328,9 @@ function hidePrefs() {
 	if (window.widget)
 		setTimeout ('widget.performTransition();', 0);
 		
-	setOptions ();
 	if (showVariables) displayOptions();
+	//setTimeOut (initialize, 300);
+	initialize();
 	displayTitle ();
 }
 
@@ -347,7 +403,7 @@ function checkHealth () {
 	var apicurl = widget.preferenceForKey("apicurl");
 	var apicusr = widget.preferenceForKey("apicusr");
 	var apicpwd = widget.preferenceForKey("apicpwd");
-	var cmd     = "/usr/bin/python tophealth.py " + apicurl + " " + apicusr + " " + apicpwd;
+	var cmd     = pythonPath + " tophealth.py " + apicurl + " " + apicusr + " " + apicpwd;
 	// Get output out of external Python script
 	var health = widget.system(cmd, null).outputString;
 	// Populate document sections
@@ -358,44 +414,60 @@ function checkHealth () {
 
 
 function button1() {
-	// Get preferences
-	var apicurl = widget.preferenceForKey("apicurl");
-	var apicusr = widget.preferenceForKey("apicusr");
-	var apicpwd = widget.preferenceForKey("apicpwd");
-	var cmd     = "/usr/bin/python tenants_table.py " + apicurl + " " + apicusr + " " + apicpwd;
-	// Get output out of external Python script
-	var txt = widget.system(cmd, null).outputString;
-	// Populate document sections
-	document.getElementById('maintable').innerHTML = txt;
-	formatHealthTable ();
-	checkHealth ();
-	showingNow = "tenants";
-	displayTitle ();
+	// Make sure all variables and checks have been carried out. Slower, but safer
+	initialize ();
+	if (showVariables) displayOptions();
+	if (!(errorMsg1.length > 1)) {
+		// Get preferences
+		var apicurl = widget.preferenceForKey("apicurl");
+		var apicusr = widget.preferenceForKey("apicusr");
+		var apicpwd = widget.preferenceForKey("apicpwd");
+		var cmd     = pythonPath + " tenants_table.py " + apicurl + " " + apicusr + " " + apicpwd;
+		debugInfo = cmd;
+		// Get output out of external Python script
+		var txt = widget.system(cmd, null).outputString;
+		// Populate document sections
+		document.getElementById('maintable').innerHTML = txt;
+		formatHealthTable ();
+		checkHealth ();
+		showingNow = "tenants";
+		displayTitle ();
+	}
 }
 
 function button2() {
-	// Get preferences
-	var apicurl = widget.preferenceForKey("apicurl");
-	var apicusr = widget.preferenceForKey("apicusr");
-	var apicpwd = widget.preferenceForKey("apicpwd");
-	var cmd     = "/usr/bin/python fabric.py " + apicurl + " " + apicusr + " " + apicpwd;
-	// Get output out of external Python script
-	var txt = widget.system(cmd, null).outputString;
-	// Populate document sections
-	document.getElementById('maintable').innerHTML = txt;
-	formatHealthTable ();
-	checkHealth ();
-	showingNow = "fabric";
-	displayTitle ();
+	// Make sure all variables and checks have been carried out. Slower, but safer
+	initialize ();
+	if (showVariables) displayOptions();
+	if (!(errorMsg1.length > 1)) {
+		// Get preferences
+		var apicurl = widget.preferenceForKey("apicurl");
+		var apicusr = widget.preferenceForKey("apicusr");
+		var apicpwd = widget.preferenceForKey("apicpwd");
+		var cmd     = pythonPath + " fabric.py " + apicurl + " " + apicusr + " " + apicpwd;
+		debugInfo = cmd;
+		// Get output out of external Python script
+		var txt = widget.system(cmd, null).outputString;
+		// Populate document sections
+		document.getElementById('maintable').innerHTML = txt;
+		formatHealthTable ();
+		checkHealth ();
+		showingNow = "fabric";
+		displayTitle ();
+	}
 }
 
 function button3() {
-	// Get preferences
-	var apicurl = widget.preferenceForKey("apicurl");
-	var apicusr = widget.preferenceForKey("apicusr");
-	var apicpwd = widget.preferenceForKey("apicpwd");
-	if (apicurl.length > 0) {
-		var cmd     = "/usr/bin/python faults.py " + apicurl + " " + apicusr + " " + apicpwd;
+	// Make sure all variables and checks have been carried out. Slower, but safer
+	initialize ();
+	if (showVariables) displayOptions();
+	if (!(errorMsg1.length > 1)) {
+		// Get preferences
+		var apicurl = widget.preferenceForKey("apicurl");
+		var apicusr = widget.preferenceForKey("apicusr");
+		var apicpwd = widget.preferenceForKey("apicpwd");
+		var cmd     = pythonPath + " faults.py " + apicurl + " " + apicusr + " " + apicpwd;
+		debugInfo = cmd;
 		// Get output out of external Python script
 		var txt = widget.system(cmd, null).outputString;
 		// Populate document sections
@@ -404,8 +476,6 @@ function button3() {
 		checkHealth ();
 		showingNow = "faults";
 		displayTitle ();
-	} else {
-		showPrefs ();
 	}
 }
 
@@ -460,7 +530,7 @@ function button3() {
 			</form>
 			<p>
 			Cisco ACI Desktop Widget by Jose Moreno.<br>
-			Version 0.3
+			Version 0.4
 			Prerequisites: Python and requests module
 			</p>
 		</span>	
